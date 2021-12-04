@@ -41,46 +41,11 @@ void fragment() {
 	highp vec2 finalCoords = (FRAGCOORD.xy - positionInput) / (renderScale * 32.0);
 	highp float distanceToCenter = length(finalCoords);
 	highp float nlife = pow(sin(clamp(life, 0.0, 1.0) * 3.141592), 0.5);
-	highp float on = ((range - distanceToCenter) / range);
-	highp float n = on;
-	highp vec2 fcOffset = vec2(fbm(finalCoords.xy + life / 2.0),fbm(finalCoords.yx + life / 2.0));
-	n *= fbm((finalCoords + fcOffset) / (nlife / (n * 1.5))) * 1.1;
-	n *= clamp(nlife, 0.0, 1.0);
-	highp float a = 0.0; // Alpha
-	highp float p = 0.0; // Position between L and R stops
-	lowp vec3 lCol = vec3(0.0); // Left stop color
-	lowp vec3 rCol = vec3(0.0); // Right stop color
+	highp float on = clamp(((range - distanceToCenter) / range), 0.0, 1.0);
+	highp vec2 fcOffset = vec2(fbm(finalCoords.xy + life / 2.0), fbm(finalCoords.yx + life / 2.0));
+	fcOffset -= 0.5;
+	fcOffset *= 2.0;
 
-	if (n <= 0.05) {
-		p = 0.0;
-		a = 0.0;
-		lCol = vec3(0.0);
-		rCol = vec3(0.0);
-	} else if (n < 0.132) {
-		p = (n - 0.05) / (0.132 - 0.05);
-		a = p;
-		lCol = vec3(0.0);
-		rCol = vec3(0.098, 0.406, 0.112);
-	} else if (n < 0.186) {
-		p = (n - 0.132) / (0.186 - 0.132);
-		a = 1.0;
-		lCol = vec3(0.098, 0.406, 0.112);
-		rCol = vec3(0.168, 1.000, 0.288);
-	} else if (n < 0.388) {
-		p = (n - 0.186) / (0.388 - 0.186);
-		a = 1.0;
-		lCol = vec3(0.168, 1.000, 0.288);
-		rCol = vec3(0.583, 1.000, 0.640);
-	} else if (n >= 0.388) {
-		p = (n - 0.388) / 0.5;
-		a = 1.0;
-		lCol = vec3(0.583, 1.000, 0.640);
-		rCol = vec3(1.000, 1.000, 1.000);
-	}
-
-	p = clamp(p, 0.0, 1.0);
-
-	// Apply overlay
-	// FYI: If you want a smoother mix, swap lCol and rCol.
-	COLOR = vec4(mix(rCol, lCol, vec3(p)), a);
+	highp vec2 warp = clamp(on*nlife*(fcOffset/8.0), -1.0, 1.0);
+	COLOR = vec4(warp.x, warp.y, 0.0, 1.0);
 }

@@ -41,6 +41,14 @@
     life: 0
 
 - type: shader
+  id: RadiationDistortion
+  kind: source
+  path: "/Textures/Shaders/rad-distortion.swsl"
+  params:
+    positionInput: 0,0
+    life: 0
+
+- type: shader
   id: Texture
   kind: source
   path: "/Textures/Shaders/texture.swsl"

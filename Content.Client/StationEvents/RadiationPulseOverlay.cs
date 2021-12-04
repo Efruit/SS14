@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Content.Client.DistortionMap;
 using Robust.Client.Graphics;
 using Robust.Shared.Enums;
 using Robust.Shared.GameObjects;
@@ -17,21 +18,24 @@ namespace Content.Client.StationEvents
         [Dependency] private readonly IEntityManager _entityManager = default!;
         [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
         [Dependency] private readonly IGameTiming _gameTiming = default!;
+        private readonly DistortionMapOverlay? _dmo = default!;
 
         private const float MaxDist = 15.0f;
 
         public override OverlaySpace Space => OverlaySpace.WorldSpace;
-        public override bool RequestScreenTexture => true;
 
         private TimeSpan _lastTick = default;
 
         private readonly ShaderInstance _baseShader;
-        private readonly Dictionary<EntityUid, (ShaderInstance shd, RadiationShaderInstance instance)> _pulses = new();
+        private readonly ShaderInstance _baseDistShader;
+        private readonly Dictionary<EntityUid, (ShaderInstance shd, ShaderInstance dshd, RadiationShaderInstance instance)> _pulses = new();
 
         public RadiationPulseOverlay()
         {
             IoCManager.InjectDependencies(this);
+            OverlayManager.TryGetOverlay<DistortionMapOverlay>(out _dmo);
             _baseShader = _prototypeManager.Index<ShaderPrototype>("Radiation").Instance().Duplicate();
+            _baseDistShader = _prototypeManager.Index<ShaderPrototype>("RadiationDistortion").Instance().Duplicate();
         }
 
         protected override void Draw(in OverlayDrawArgs args)
@@ -41,13 +45,14 @@ namespace Content.Client.StationEvents
             if (_pulses.Count == 0)
                 return;
 
-            if (ScreenTexture == null)
-                return;
+            DistortionMapOverlay.DistMapInstance? dm = default;
+            if (_dmo is not null && !_dmo.TryGetMap(args.Viewport, out dm))
+                dm = _dmo.CreateMap(args.Viewport);
 
             var worldHandle = args.WorldHandle;
             var viewport = args.Viewport;
 
-            foreach ((var shd, var instance) in _pulses.Values)
+            foreach ((var shd, var dshd, var instance) in _pulses.Values)
             {
                 // To be clear, this needs to use "inside-viewport" pixels.
                 // In other words, specifically NOT IViewportControl.WorldToScreen (which uses outer coordinates).
@@ -59,12 +64,36 @@ namespace Content.Client.StationEvents
                 var life = (_lastTick - instance.Start) / (instance.End - instance.Start);
                 shd?.SetParameter("life", (float) life);
 
-                // There's probably a very good reason not to do this.
-                // Oh well!
-                shd?.SetParameter("SCREEN_TEXTURE", viewport.RenderTarget.Texture);
-
                 worldHandle.UseShader(shd);
-                worldHandle.DrawRect(Box2.CenteredAround(instance.CurrentMapCoords, new Vector2(instance.Range, instance.Range) * 2f), Color.White);
+                worldHandle.DrawRect(
+                        Box2.CenteredAround(
+                            instance.CurrentMapCoords,
+                            new Vector2(instance.Range, instance.Range) * 2f
+                        ),
+                        Color.White
+                    );
+
+                if (dm is not null)
+                {
+                    worldHandle.RenderInRenderTarget(dm.map, () =>
+                        {
+                            dshd?.SetParameter("renderScale", viewport.RenderScale);
+                            dshd?.SetParameter("positionInput", tempCoords);
+                            dshd?.SetParameter("range", instance.Range);
+                            dshd?.SetParameter("life", (float) life);
+                            worldHandle.UseShader(dshd);
+                            worldHandle.DrawRect(
+                                    Box2.CenteredAround(
+                                        instance.CurrentMapCoords / dm.szDiv,
+                                        new Vector2(instance.Range, instance.Range) * 2f / dm.szDiv
+                                    ),
+                                    Color.White
+                                );
+                        },
+                        null,
+                        true
+                    );
+                }
             }
         }
 
@@ -92,6 +121,7 @@ namespace Content.Client.StationEvents
                             pulseEntity.Uid,
                             (
                                 _baseShader.Duplicate(),
+                                _baseDistShader.Duplicate(),
                                 new RadiationShaderInstance(
                                     pulseEntity.Transform.MapPosition.Position,
                                     pulse.Range,
