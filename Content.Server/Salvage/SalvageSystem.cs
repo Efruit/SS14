@@ -5,6 +5,7 @@ using Content.Shared.Examine;
 using Content.Shared.GameTicking;
 using Content.Shared.Interaction;
 using Content.Shared.Popups;
+using Content.Shared.Salvage;
 using Robust.Server.Maps;
 using Robust.Shared.Configuration;
 using Robust.Shared.GameObjects;

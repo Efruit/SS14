@@ -1,0 +1,31 @@
+highp float hash1( highp float n ) { return fract(sin(n)*43758.5453); }
+highp vec2  hash2( highp vec2  p ) {
+	p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) );
+	return fract(sin(p)*43758.5453);
+}
+
+highp float hash2f( highp vec2 p) {
+	return hash1(p.x) * hash1(p.y);
+}
+
+highp float voronoi( in highp vec2 x )
+{
+	ivec2 p = ivec2(floor(x.x), floor(x.y));
+	highp vec2  f = fract( x );
+
+	highp float res = 8.0;
+	for( int j=-1; j<=1; j++ )
+	for( int i=-1; i<=1; i++ )
+	{
+		ivec2 b = ivec2( i, j );
+		highp vec2  r = vec2( b ) - f + hash2f( p + b );
+		highp float d = dot( r, r );
+
+		res = min( res, d );
+	}
+	return sqrt( res );
+}
+
+void fragment() {
+	COLOR=vec4(voronoi(UV), 0.0, 0.0, 0.0);
+}

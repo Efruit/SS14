@@ -124,7 +124,6 @@ namespace Content.Client.Entry
             "SurgeryTool",
             "EmitSoundOnThrow",
             "Salvage",
-            "SalvageMagnet",
             "Flash",
             "Docking",
             "Telecrystal",

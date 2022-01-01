@@ -16,6 +16,7 @@ using Content.Client.MobState.Overlays;
 using Content.Client.Parallax;
 using Content.Client.Parallax.Managers;
 using Content.Client.Preferences;
+using Content.Client.Salvage;
 using Content.Client.Sandbox;
 using Content.Client.Screenshot;
 using Content.Client.Singularity;
@@ -184,6 +185,7 @@ namespace Content.Client.Entry
             overlayMgr.AddOverlay(new CircleMaskOverlay());
             overlayMgr.AddOverlay(new FlashOverlay());
             overlayMgr.AddOverlay(new RadiationPulseOverlay());
+            overlayMgr.AddOverlay(new SalvageBeamOverlay());
 
             IoCManager.Resolve<IChatManager>().Initialize();
             IoCManager.Resolve<ISandboxManager>().Initialize();

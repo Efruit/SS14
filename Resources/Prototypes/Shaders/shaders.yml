@@ -36,6 +36,11 @@
     life: 0
 
 - type: shader
+  id: SalvageBeam
+  kind: source
+  path: "/Textures/Shaders/salvage.swsl"
+
+- type: shader
   id: Texture
   kind: source
   path: "/Textures/Shaders/texture.swsl"
